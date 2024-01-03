@@ -96,7 +96,9 @@ class ConfigurationManager:
             data_path=config.data_path,
             model_path = config.model_path,
             tokenizer_path = config.tokenizer_path,
-            metric_file_name = config.metric_file_name
+            metric_file_name = config.metric_file_name,
+            mlflow_uri="https://dagshub.com/kiranaradhya20/text-summarizer-project.mlflow",
+            all_params=self.params
            
         )
 

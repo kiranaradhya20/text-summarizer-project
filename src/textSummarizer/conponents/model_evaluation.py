@@ -3,6 +3,9 @@ from datasets import load_dataset, load_from_disk, load_metric
 import torch
 import pandas as pd
 from tqdm import tqdm
+import mlflow
+import mlflow.keras
+from urllib.parse import urlparse
 from textSummarizer.entity import ModelEvaluationConfig
 
 
@@ -50,6 +53,7 @@ class ModelEvaluation:
             
         #  Finally compute and return the ROUGE scores.
         score = metric.compute()
+        
         return score
 
 
@@ -71,6 +75,31 @@ class ModelEvaluation:
             )
 
         rouge_dict = dict((rn, score[rn].mid.fmeasure ) for rn in rouge_names )
+        lis=[]
+        rouge_list = [lis.append(score[rn].mid.fmeasure) for rn in rouge_names ]
+        print(lis[0],lis[1],lis[2],lis[3])
+        
 
         df = pd.DataFrame(rouge_dict, index = ['pegasus'] )
         df.to_csv(self.config.metric_file_name, index=False)
+        return lis,model_pegasus
+
+    def log_into_mlflow(self,lis,model):
+        mlflow.set_registry_uri(self.config.mlflow_uri)
+        tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
+        
+        with mlflow.start_run():
+            mlflow.log_params(self.config.all_params)
+            mlflow.log_metrics(
+                {"rouge1": lis[0], "rouge2": lis[1],"rougeL": lis[2],"rougeLsum": lis[3]}
+            )
+            # Model registry does not work with file store
+            if tracking_url_type_store != "file":
+
+                # Register the model
+                # There are other ways to use the Model Registry, which depends on the use case,
+                # please refer to the doc for more information:
+                # https://mlflow.org/docs/latest/model-registry.html#api-workflow
+                mlflow.pytorch.log_model(model, "model", registered_model_name="pegasus")
+            else:
+                mlflow.pytorch.log_model(model, "model")

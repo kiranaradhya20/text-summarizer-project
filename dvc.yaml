@@ -1,0 +1,64 @@
+stages:
+  data_ingestion:
+    cmd: python src/textSummarizer/pipeline/stage_01_data_ingestion.py
+    deps:
+      - src/textSummarizer/pipeline/stage_01_data_ingestion.py
+      - config/config.yaml
+    outs:
+      - artifacts/data_ingestion/samsun
+      
+
+  data_validation:
+    cmd: python src/textSummarizer/pipeline/stage_02_data_validation.py
+    deps:
+      - src/textSummarizer/pipeline/stage_02_data_validation.py
+      - config/config.yaml
+    outs:
+      - artifacts/data_validation/status.txt
+
+  data_transformation:
+    cmd: python src/textSummarizer/pipeline/stage_03_data_transformation.py
+    deps:
+      - src/textSummarizer/pipeline/stage_03_data_transformation.py
+      - config/config.yaml
+      - artifacts/data_ingestion/samsun/samsum_dataset/test
+      - artifacts/data_ingestion/samsun/samsum_dataset/train
+      - artifacts/data_ingestion/samsun/samsum_dataset/validation
+    outs:
+      - artifacts/data_transformation/samsum_dataset/test
+      - artifacts/data_transformation/samsum_dataset/train
+      - artifacts/data_transformation/samsum_dataset/validation
+
+  model_trainer:
+    cmd: python src/textSummarizer/pipeline/stage_04_model_trainer.py
+    deps:
+      - src/textSummarizer/pipeline/stage_04_model_trainer.py
+      - config/config.yaml
+      - artifacts/data_transformation/samsum_dataset/test
+      - artifacts/data_transformation/samsum_dataset/train
+      - artifacts/data_transformation/samsum_dataset/validation
+      - artifacts/prepare_base_model
+    params:
+      - num_train_epochs
+      - warmup_steps
+      - per_device_train_batch_size
+      - weight_decay
+      - logging_steps
+      - evaluation_strategy
+      - eval_steps
+      - save_steps
+      - gradient_accumulation_steps
+    outs:
+      - artifacts/model_trainer/pegasus-samsum-model
+      - artifacts/model_trainer/tokenizer
+
+  model_evaluation:
+    cmd: python src/textSummarizer/pipeline/stage_05_model_evaluation.py
+    deps:
+      - src/textSummarizer/pipeline/stage_05_model_evaluation.py
+      - config/config.yaml
+      - artifacts/model_trainer/pegasus-samsum-model
+      - artifacts/model_trainer/tokenizer
+    metrics:
+      - artifacts/model_evaluation/metrics.csv
+    

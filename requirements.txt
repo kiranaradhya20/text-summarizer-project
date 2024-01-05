@@ -3,6 +3,7 @@ transformers[sentencepiece]
 datasets
 gdown
 sacrebleu 
+dvc
 rouge_score 
 py7zr
 pandas
